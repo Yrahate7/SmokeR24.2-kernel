@@ -32,11 +32,14 @@ static struct cpuquiet_lite_data {
 
 static struct kobject *cpuquiet_lite_auto_sysfs_kobject;
 static bool enable = true;
+static unsigned int custom_min_cpu_online = 2; /* 1/2/3/4 */
 
 CPQ_BASIC_ATTRIBUTE(enable, 0644, bool);
+CPQ_BASIC_ATTRIBUTE(custom_min_cpu_online, 0644, uint);
 
 static struct attribute *tegra_auto_attributes[] = {
 	&enable_attr.attr,
+	&custom_min_cpu_online_attr.attr,
 	NULL,
 };
 
@@ -80,7 +83,9 @@ static void __cpuinit tegra_cpuquiet_lite_work_func(struct work_struct *work)
 
 	for (cpunumber = 1; cpunumber < online_cpus; cpunumber++) {
 		if (cpuquiet_l_data.suspended) {
-			cpu_down(cpunumber);
+			if (cpunumber >= custom_min_cpu_online) {
+				cpu_down(cpunumber);
+			}
 		} else {
 			cpu_up(cpunumber);
 		}
