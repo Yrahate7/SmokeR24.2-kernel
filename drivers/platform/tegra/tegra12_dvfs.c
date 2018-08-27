@@ -141,7 +141,7 @@ static struct dvfs_rail *tegra12_dvfs_rails[] = {
 /* CPU DVFS tables */
 static unsigned long cpu_max_freq[] = {
 /* speedo_id	0	 1	  2	   3	    4	     5	      6		7	 8*/
-		2014500, 2320500, 2116500, 2524500, 1811000, 2218500, 1912500, 1912500, 2116500,
+		2014500, 2320500, 2116500, 2524500, 1811000, 2499000, 1912500, 1912500, 2116500,
 };
 
 static struct cpu_cvb_dvfs cpu_cvb_dvfs_table[] = {
@@ -753,7 +753,7 @@ static int resolve_core_override(int min_override_mv)
 /* GPU DVFS tables */
 static unsigned long gpu_max_freq[] = {
 /* speedo_id	0	1	2	 3	4	5	6*/
-		648000, 852000, 1008000, 780000, 804000, 756000, 852000
+		648000, 1008000, 1008000, 780000, 804000, 756000, 1008000
 };
 static struct gpu_cvb_dvfs gpu_cvb_dvfs_table[] = {
 	{

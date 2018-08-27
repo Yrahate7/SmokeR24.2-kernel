@@ -56,6 +56,10 @@
 
 #include "tegra_udc.h"
 
+#ifdef CONFIG_FORCE_FAST_CHARGE
+#include <linux/fastcharge.h>
+#endif
+
 
 #define	DRIVER_DESC	"Nvidia Tegra High-Speed USB Device Controller driver"
 
@@ -1445,12 +1449,28 @@ static int tegra_usb_set_charging_current(struct tegra_udc *udc)
 		break;
 	case CONNECT_TYPE_DCP:
 		dev_info(dev, "connected to DCP(wall charger)\n");
+#ifdef CONFIG_FORCE_FAST_CHARGE
+		if (force_fast_charge) {
+			max_ua = USB_CHARGING_USB_FASTCHARGE_CURRENT_LIMIT_UA;
+		} else {
+#endif	
 		max_ua = udc->dcp_current_limit;
+#ifdef CONFIG_FORCE_FAST_CHARGE
+		}
+#endif	
 		tegra_udc_notify_event(udc, USB_EVENT_CHARGER);
 		break;
 	case CONNECT_TYPE_DCP_QC2:
 		dev_info(dev, "connected to QuickCharge 2(wall charger)\n");
+#ifdef CONFIG_FORCE_FAST_CHARGE
+		if (force_fast_charge) {
+			max_ua = USB_CHARGING_USB_QC_CURRENT_LIMIT_UA;
+		} else {
+#endif			
 		max_ua = udc->qc2_current_limit;
+#ifdef CONFIG_FORCE_FAST_CHARGE
+		}
+#endif	
 		tegra_udc_notify_event(udc, USB_EVENT_CHARGER);
 		break;
 	case CONNECT_TYPE_DCP_MAXIM:
