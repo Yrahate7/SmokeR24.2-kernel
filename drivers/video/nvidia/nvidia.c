@@ -1353,8 +1353,8 @@ static int nvidiafb_probe(struct pci_dev *pd, const struct pci_device_id *ent)
 		par->FbMapSize = vram * 1024 * 1024;
 
 	/* Limit amount of vram to 64 MB */
-	if (par->FbMapSize > 64 * 1024 * 1024)
-		par->FbMapSize = 64 * 1024 * 1024;
+	if (par->FbMapSize > 128 * 1024 * 1024)
+		par->FbMapSize = 128 * 1024 * 1024;
 
 	if(par->Architecture >= NV_ARCH_40)
   	        par->FbUsableSize = par->FbMapSize - (560 * 1024);
