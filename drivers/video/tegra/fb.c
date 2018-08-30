@@ -56,7 +56,7 @@
 #endif
 
 /* support up to 4K (3840x2150) with double buffering */
-#define DEFAULT_FBMEM_SIZE	(SZ_128M + SZ_8M)
+#define DEFAULT_FBMEM_SIZE	(SZ_64M + SZ_8M)
 
 struct tegra_fb_info {
 	struct tegra_dc_win	win;
@@ -158,7 +158,7 @@ static int tegra_fb_check_var(struct fb_var_screeninfo *var,
 	}
 
 	/* Double yres_virtual to allow double buffering through pan_display */
-	var->yres_virtual = var->yres * 3;
+	var->yres_virtual = var->yres * 2;
 
 	return 0;
 }
