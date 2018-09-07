@@ -51,6 +51,10 @@
 
 static HLIST_HEAD(binder_devices);
 
+static DEFINE_MUTEX(binder_procs_lock);
+
+static DEFINE_SPINLOCK(binder_dead_nodes_lock);
+
 static struct dentry *binder_debugfs_dir_entry_root;
 static struct dentry *binder_debugfs_dir_entry_proc;
 atomic_t binder_last_id;
@@ -224,6 +228,7 @@ static struct binder_transaction_log_entry *binder_transaction_log_add(
 
 struct binder_context {
 	struct binder_node *binder_context_mgr_node;
+	struct mutex context_mgr_node_lock;
 	kuid_t binder_context_mgr_uid;
 	const char *name;
 
@@ -1162,7 +1167,9 @@ static int binder_dec_node(struct binder_node *node, int strong, int internal)
 					     "refless node %d deleted\n",
 					     node->debug_id);
 			} else {
+				spin_lock(&binder_dead_nodes_lock);
 				hlist_del(&node->dead_node);
+				spin_unlock(&binder_dead_nodes_lock);
 				binder_debug(BINDER_DEBUG_INTERNAL_REFS,
 					     "dead node %d deleted\n",
 					     node->debug_id);
@@ -2044,11 +2051,14 @@ static void binder_transaction(struct binder_proc *proc,
 			}
 			target_node = ref->node;
 		} else {
+			mutex_lock(&context->context_mgr_node_lock);
 			target_node = context->binder_context_mgr_node;
 			if (target_node == NULL) {
 				return_error = BR_DEAD_REPLY;
+				mutex_unlock(&context->context_mgr_node_lock);
 				goto err_no_context_mgr_node;
 			}
+			mutex_unlock(&context->context_mgr_node_lock);
 		}
 		e->to_node = target_node->debug_id;
 		target_proc = target_node->proc;
@@ -2418,22 +2428,30 @@ static int binder_thread_write(struct binder_proc *proc,
 		case BC_RELEASE:
 		case BC_DECREFS: {
 			uint32_t target;
-			struct binder_ref *ref;
+			struct binder_ref *ref = NULL;
 			const char *debug_string;
 
 			if (get_user_preempt_disabled(target, (uint32_t __user *)ptr))
 				return -EFAULT;
+
 			ptr += sizeof(uint32_t);
-			if (target == 0 && context->binder_context_mgr_node &&
+			if (target == 0 &&
 			    (cmd == BC_INCREFS || cmd == BC_ACQUIRE)) {
-				ref = binder_get_ref_for_node(proc,
-					context->binder_context_mgr_node);
-				if (ref->desc != target) {
-					binder_user_error("%d:%d tried to acquire reference to desc 0, got %d instead\n",
-						proc->pid, thread->pid,
-						ref->desc);
+				struct binder_node *ctx_mgr_node;
+ 				mutex_lock(&context->context_mgr_node_lock);
+				ctx_mgr_node = context->binder_context_mgr_node;
+				if (ctx_mgr_node) {
+					ref = binder_get_ref_for_node(proc,
+							ctx_mgr_node);
+					if (ref && ref->desc != target) {
+						binder_user_error("%d:%d tried to acquire reference to desc 0, got %d instead\n",
+							proc->pid, thread->pid,
+							ref->desc);
+					}
 				}
-			} else
+				mutex_unlock(&context->context_mgr_node_lock);
+			}
+			if (ref == NULL)
 				ref = binder_get_ref(proc, target,
 						     cmd == BC_ACQUIRE ||
 						     cmd == BC_RELEASE);
@@ -3640,12 +3658,15 @@ static int binder_open(struct inode *nodp, struct file *filp)
 	binder_lock(proc->context, __func__);
 
 	binder_stats_created(BINDER_STAT_PROC);
-	hlist_add_head(&proc->proc_node, &proc->context->binder_procs);
 	proc->pid = current->group_leader->pid;
 	INIT_LIST_HEAD(&proc->delivered_death);
 	filp->private_data = proc;
 
+	mutex_lock(&binder_procs_lock);
 	binder_unlock(proc->context, __func__);
+	mutex_unlock(&binder_procs_lock);
+
+	hlist_add_head(&proc->proc_node, &proc->context->binder_procs);
 
 	if (binder_debugfs_dir_entry_proc) {
 		char strbuf[11];
@@ -3726,7 +3747,10 @@ static int binder_node_release(struct binder_node *node, int refs)
 	node->proc = NULL;
 	node->local_strong_refs = 0;
 	node->local_weak_refs = 0;
+
+	spin_lock(&binder_dead_nodes_lock);
 	hlist_add_head(&node->dead_node, &context->binder_dead_nodes);
+	spin_unlock(&binder_dead_nodes_lock);
 
 	hlist_for_each_entry(ref, &node->refs, node_entry) {
 		refs++;
@@ -3763,8 +3787,11 @@ static void binder_deferred_release(struct binder_proc *proc)
 
 	BUG_ON(proc->vma);
 
+	mutex_lock(&binder_procs_lock);
 	hlist_del(&proc->proc_node);
+	mutex_unlock(&binder_procs_lock);
 
+	mutex_lock(&context->context_mgr_node_lock);
 	if (context->binder_context_mgr_node &&
 	    context->binder_context_mgr_node->proc == proc) {
 		binder_debug(BINDER_DEBUG_DEAD_BINDER,
@@ -3772,6 +3799,7 @@ static void binder_deferred_release(struct binder_proc *proc)
 			     __func__, proc->pid);
 		context->binder_context_mgr_node = NULL;
 	}
+	mutex_unlock(&context->context_mgr_node_lock);
 
 	threads = 0;
 	active_transactions = 0;
@@ -4270,6 +4298,7 @@ static int binder_state_show(struct seq_file *m, void *unused)
 		context = &device->context;
 		if (do_lock)
 			binder_lock(context, __func__);
+		spin_lock(&binder_dead_nodes_lock);
 		if (!wrote_dead_nodes_header &&
 		    !hlist_empty(&context->binder_dead_nodes)) {
 			seq_puts(m, "dead nodes:\n");
@@ -4278,6 +4307,7 @@ static int binder_state_show(struct seq_file *m, void *unused)
 		hlist_for_each_entry(node, &context->binder_dead_nodes,
 				     dead_node)
 			print_binder_node(m, node);
+		spin_unlock(&binder_dead_nodes_lock);
 
 		if (do_lock)
 			binder_unlock(context, __func__);
@@ -4288,11 +4318,14 @@ static int binder_state_show(struct seq_file *m, void *unused)
 		if (do_lock)
 			binder_lock(context, __func__);
 
+		mutex_lock(&binder_procs_lock);
 		hlist_for_each_entry(proc, &context->binder_procs, proc_node)
 			print_binder_proc(m, proc, 1);
+		mutex_unlock(&binder_procs_lock);
 		if (do_lock)
 			binder_unlock(context, __func__);
 	}
+
 	return 0;
 }
 
@@ -4325,8 +4358,10 @@ static int binder_stats_show(struct seq_file *m, void *unused)
 		if (do_lock)
 			binder_lock(context, __func__);
 
+		mutex_lock(&binder_procs_lock);
 		hlist_for_each_entry(proc, &context->binder_procs, proc_node)
 			print_binder_proc_stats(m, proc);
+		mutex_unlock(&binder_procs_lock);
 		if (do_lock)
 			binder_unlock(context, __func__);
 	}
@@ -4346,8 +4381,10 @@ static int binder_transactions_show(struct seq_file *m, void *unused)
 		if (do_lock)
 			binder_lock(context, __func__);
 
+		mutex_lock(&binder_procs_lock);
 		hlist_for_each_entry(proc, &context->binder_procs, proc_node)
 			print_binder_proc(m, proc, 0);
+		mutex_unlock(&binder_procs_lock);
 		if (do_lock)
 			binder_unlock(context, __func__);
 	}
@@ -4367,12 +4404,15 @@ static int binder_proc_show(struct seq_file *m, void *unused)
 		if (do_lock)
 			binder_lock(context, __func__);
 
+		mutex_lock(&binder_procs_lock);
 		hlist_for_each_entry(itr, &context->binder_procs, proc_node) {
 			if (itr->pid == pid) {
 				seq_puts(m, "binder proc state:\n");
 				print_binder_proc(m, itr, 1);
 			}
 		}
+		mutex_unlock(&binder_procs_lock);
+
 		if (do_lock)
 			binder_unlock(context, __func__);
 	}
@@ -4473,6 +4513,7 @@ static int __init init_binder_device(const char *name)
 	mutex_init(&context->binder_main_lock);
 	mutex_init(&context->binder_deferred_lock);
 	mutex_init(&context->binder_mmap_lock);
+	mutex_init(&context->context_mgr_node_lock);
 
 	context->binder_deferred_workqueue =
 		create_singlethread_workqueue(name);
