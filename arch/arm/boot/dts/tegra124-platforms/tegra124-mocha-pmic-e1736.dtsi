@@ -37,9 +37,9 @@
 				regulator-max-microamp = <3000000>;
 				ti,watchdog-timeout = <0>;
 				rtc-alarm-time = <3600>;
-				ti,auto-recharge-time = <1800>;
+				ti,auto-recharge-time = <2200>;
 				ti,input-voltage-limit-millivolt = <4400>;
-				ti,fast-charge-current-limit-milliamp = <3100>;
+				ti,fast-charge-current-limit-milliamp = <3400>;
 				ti,pre-charge-current-limit-milliamp = <256>;
 				ti,charge-term-current-limit-milliamp = <400>;
 				ti,ir-comp-resister-ohm = <10>;
