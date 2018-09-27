@@ -122,7 +122,6 @@ compile()
 	generate_version
 	make $config
 	make -j$threads ARCH=$ARCH CROSS_COMPILE=$toolchain zImage 2> $build_log
-
 	local i=0
 	while read line; do 
 		error=$(echo "$line" | awk '/warning:/{print}')

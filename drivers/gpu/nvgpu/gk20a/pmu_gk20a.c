@@ -2103,7 +2103,7 @@ static bool pmu_queue_is_empty(struct pmu_gk20a *pmu,
 static bool pmu_queue_has_room(struct pmu_gk20a *pmu,
 			struct pmu_queue *queue, u32 size, bool *need_rewind)
 {
-	u32 head, tail, free;
+	u32 head = 0, tail = 0 , free = 0;
 	bool rewind = false;
 
 	size = ALIGN(size, QUEUE_ALIGNMENT);
@@ -2150,7 +2150,7 @@ static int pmu_queue_pop(struct pmu_gk20a *pmu,
 			struct pmu_queue *queue, void *data, u32 size,
 			u32 *bytes_read)
 {
-	u32 head, tail, used;
+	u32 head = 0, tail = 0, used = 0;
 
 	*bytes_read = 0;
 

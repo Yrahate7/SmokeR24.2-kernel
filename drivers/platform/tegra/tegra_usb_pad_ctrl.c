@@ -2037,22 +2037,29 @@ static int tegra_pcie_lane_iddq(bool enable, int lane_owner)
 		~XUSB_PADCTL_USB3_PAD_MUX_FORCE_PCIE_PAD_IDDQ_DISABLE_MASK2;
 	case PCIE_LANES_X2_X0:
 	if (enable)
+	{
 		val |=
 		(XUSB_PADCTL_USB3_PAD_MUX_FORCE_PCIE_PAD_IDDQ_DISABLE_MASK3 |
 		XUSB_PADCTL_USB3_PAD_MUX_FORCE_PCIE_PAD_IDDQ_DISABLE_MASK4);
-	else
+	}
+	else{
 		val &=
 		~(XUSB_PADCTL_USB3_PAD_MUX_FORCE_PCIE_PAD_IDDQ_DISABLE_MASK3 |
 		XUSB_PADCTL_USB3_PAD_MUX_FORCE_PCIE_PAD_IDDQ_DISABLE_MASK4);
 		break;
+	}
 	case PCIE_LANES_X0_X1:
 	if (enable)
+	{
 		val |=
 		XUSB_PADCTL_USB3_PAD_MUX_FORCE_PCIE_PAD_IDDQ_DISABLE_MASK2;
+	}	
 	else
+	{
 		val &=
 		~XUSB_PADCTL_USB3_PAD_MUX_FORCE_PCIE_PAD_IDDQ_DISABLE_MASK2;
 		break;
+	}
 #endif
 	default:
 		pr_err("Tegra PCIe IDDQ error: wrong lane config\n");

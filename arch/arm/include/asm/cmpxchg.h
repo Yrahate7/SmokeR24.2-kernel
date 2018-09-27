@@ -197,11 +197,16 @@ static inline unsigned long __cmpxchg_mb(volatile void *ptr, unsigned long old,
 	return ret;
 }
 
-#define cmpxchg(ptr,o,n)						\
-	((__typeof__(*(ptr)))__cmpxchg_mb((ptr),			\
-					  (unsigned long)(o),		\
-					  (unsigned long)(n),		\
-					  sizeof(*(ptr))))
+#define cmpxchg(ptr, o, n)						\
+({									\
+	__typeof__(*(ptr)) __ret;					\
+	__ret = (__typeof__(*(ptr)))					\
+		__cmpxchg_mb((ptr),					\
+			     (unsigned long)(o),			\
+			     (unsigned long)(n),			\
+			     sizeof(*(ptr)));				\
+	__ret;								\
+})
 
 static inline unsigned long __cmpxchg_local(volatile void *ptr,
 					    unsigned long old,

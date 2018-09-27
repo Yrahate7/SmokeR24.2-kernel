@@ -567,7 +567,7 @@ static int bmp_mode(struct bmp_state *st, unsigned int period_us,
 		    unsigned int scale_user, unsigned int enable)
 {
 	u8 mode;
-	u8 t_sb;
+	u8 t_sb = 0;
 	unsigned int i;
 	unsigned int scale_i;
 	unsigned int us = 0;

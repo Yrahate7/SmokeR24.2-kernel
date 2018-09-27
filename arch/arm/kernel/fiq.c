@@ -259,7 +259,7 @@ err:
 /*
  * Set the offset between normal IRQs and their FIQ shadows.
  */
-void __init init_FIQ(int start)
+void init_FIQ(int start)
 {
 	fiq_start = start;
 }

@@ -2032,7 +2032,7 @@ static int mxt_set_power_cfg(struct mxt_data *data, u8 mode)
 			if (mxt_get_object(data, mxt_save[i].suspend_obj) == NULL)
 				continue;
 			if (mxt_save[i].suspend_flags == MXT_SUSPEND_DYNAMIC)
-				error |= mxt_read_object(data,
+			{	error |= mxt_read_object(data,
 					mxt_save[i].suspend_obj,
 					mxt_save[i].suspend_reg,
 					&mxt_save[i].restore_val);
@@ -2040,7 +2040,8 @@ static int mxt_set_power_cfg(struct mxt_data *data, u8 mode)
 					mxt_save[i].suspend_obj,
 					mxt_save[i].suspend_reg,
 					mxt_save[i].suspend_val);
-			if (error) {
+		        }
+		if (error) {
 				error = mxt_chip_reset(data);
 				if (error)
 					dev_err(dev, "Failed to do chip reset!\n");

@@ -2053,7 +2053,7 @@ static int tegra_nvavp_audio_open(struct inode *inode, struct file *filp)
 
 	mutex_lock(&nvavp->open_lock);
 	ret = tegra_nvavp_open(nvavp, &clientctx, NVAVP_AUDIO_CHANNEL);
-	filp->private_data = clientctx;
+	filp->private_data = &clientctx;
 	mutex_unlock(&nvavp->open_lock);
 
 	return ret;

@@ -697,10 +697,12 @@ static const char * const bowmore_dt_board_compat[] = {
 	NULL
 };
 
+#ifdef CONFIG_ARCH_TEGRA_13x_SOC
 static const char * const loki_dt_board_compat[] = {
 	"nvidia,t132loki",
 	NULL
 };
+#endif
 
 static const char * const jetson_dt_board_compat[] = {
 	"nvidia,jetson-tk1",
