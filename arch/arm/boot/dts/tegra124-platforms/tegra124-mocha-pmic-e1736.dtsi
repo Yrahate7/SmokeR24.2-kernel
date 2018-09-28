@@ -37,7 +37,7 @@
 				regulator-max-microamp = <3000000>;
 				ti,watchdog-timeout = <0>;
 				rtc-alarm-time = <3600>;
-				ti,auto-recharge-time = <2200>;
+				ti,auto-recharge-time = <3600>;
 				ti,input-voltage-limit-millivolt = <4400>;
 				ti,fast-charge-current-limit-milliamp = <4544>;
 				ti,pre-charge-current-limit-milliamp = <256>;
@@ -46,9 +46,13 @@
 				ti,ir-comp-voltage-millivolt = <32>;
 				ti,thermal-regulation-threshold-degc = <60>;
 				ti,charge-voltage-limit-millivolt = <4351>;
+				ti,disbale-suspend-during-charging;
+				ti,soc-range = <50 60 70 80 85 90 95 101>;
+				ti,input-voltage-soc-limit = <4200 4280 4360 4440 4520 4600 4680 4760>;
 				ti,temp-range = <15 45 50>;
 				ti,charge-thermal-voltage-limit = <4352 4352 4200>;
-				ti,charge-current-limit = <3000 4544 2000>;
+				ti,charge-thermal-current-limit = <1000 4544 2000>;
+				ti,charge-current-limit = <1000 4544 2000>;
 				consumers {
 					c1 {
 						regulator-consumer-supply = "usb_bat_chg";
