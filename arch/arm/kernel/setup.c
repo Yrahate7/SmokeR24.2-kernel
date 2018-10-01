@@ -908,7 +908,7 @@ static const char *hwcap_str[] = {
 static int c_show(struct seq_file *m, void *v)
 {
 	int i, j;
-	u32 cpuid;
+	u32 cpuid = 0;
 
 # if defined(CONFIG_REPORT_PRESENT_CPUS)
 	for_each_present_cpu(i) {

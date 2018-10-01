@@ -45,7 +45,7 @@ noinline void notrace pstore_rtrace_call(enum rtrace_event_type log_type,
 					void *data, long val)
 {
 	unsigned long flags;
-	unsigned long phys;
+
 	struct pstore_rtrace_record rec = {};
 
 	if (!pstore_rtrace_enabled())

@@ -878,7 +878,6 @@ static void audio_dec(struct hid_device *hdev, const uint8_t *raw_input,
 	struct snd_card *shdr_card;
 	struct snd_atvr *atvr_snd;
 	unsigned long flags;
-	int ret;
 
 	if (shdr_dev == NULL)
 		return;
