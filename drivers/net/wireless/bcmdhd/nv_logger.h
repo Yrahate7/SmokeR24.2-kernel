@@ -50,11 +50,11 @@ void write_log_uninit(void);
 void write_log_file(const char *);
 void write_queue_work(struct work_struct *);
 int dhdlog_sysfs_deinit(void);
-int dhdlog_sysfs_init();
-void nvlogger_suspend_work();
-void nvlogger_resume_work();
-static int dhd_log_netlink_init();
-static void dhd_log_netlink_deinit();
+int dhdlog_sysfs_init(void);
+void nvlogger_suspend_work(void);
+void nvlogger_resume_work(void);
+int dhd_log_netlink_init(void);
+void dhd_log_netlink_deinit(void);
 s32 dhd_log_netlink_send_msg(int pid, int type, int seq,
 			void *data, size_t size);
 extern char nv_error_buffer[MAX_ERROR_SIZE];

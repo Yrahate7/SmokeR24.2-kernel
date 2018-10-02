@@ -118,9 +118,6 @@ static int sdioh_probe(struct sdio_func *func)
 	wifi_adapter_info_t *adapter;
 	osl_t *osh = NULL;
 	sdioh_info_t *sdioh = NULL;
-#if defined(CONFIG_WIFI_CONTROL_FUNC)
-	struct wifi_platform_data *plat_data;
-#endif
 
 	sd_err(("bus num (host idx)=%d, slot num (rca)=%d\n", host_idx, rca));
 	adapter = dhd_wifi_platform_get_adapter(SDIO_BUS, host_idx, rca);

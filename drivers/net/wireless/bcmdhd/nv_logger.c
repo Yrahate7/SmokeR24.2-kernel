@@ -88,7 +88,6 @@ int write_log(int event, const char *buf, const char *info)
 	int buf_len = 0;
 	int info_len = 0;
 	int time_len = 0;
-	struct timespec ts;
 	struct timeval now;
 	struct tm date_time;
 	static int count = 0;
@@ -182,7 +181,6 @@ void write_queue_work(struct work_struct *work)
 {
 	struct log_node *temp = NULL;
 	struct list_head *pos = NULL, *n = NULL;
-	char *log = NULL;
 	int list1_size = 0;
 	int list2_size = 0;
 
@@ -301,7 +299,7 @@ static void dhd_log_netlink_recv(struct sk_buff *skb)
 		dhd_log_netlink_send_msg(0, 0, 0, "Firmware logs\n", 15);
 }
 
-static int dhd_log_netlink_init(void)
+int dhd_log_netlink_init(void)
 {
 	struct netlink_kernel_cfg cfg = {
 		.input	= dhd_log_netlink_recv,
@@ -323,7 +321,7 @@ static int dhd_log_netlink_init(void)
 	return 0;
 }
 
-static void dhd_log_netlink_deinit(void)
+void dhd_log_netlink_deinit(void)
 {
 	if (nl_sk) {
 		netlink_kernel_release(nl_sk);
@@ -362,7 +360,7 @@ nlmsg_failure:
 	return ret;
 }
 
-void dumplogs()
+void dumplogs(void)
 {
 	/* try sleeping blocking two queues to avoid blocking both queues */
 	pr_info("dumplogs from nv_logger\n");
@@ -377,7 +375,6 @@ static ssize_t dhdlog_sysfs_enablelog_store(struct kobject *kobj,
 			struct kobj_attribute *attr,
 				const char *buf, ssize_t count)
 {
-	int val;
 	pr_info("dhdlog_sysfs_enablelog_store = %s", buf);
 	if (strncmp(buf, "0", 1) == 0 || strncmp(buf, "false", 5) == 0
 		|| strncmp(buf, "no", 2) == 0) {

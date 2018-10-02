@@ -2514,7 +2514,7 @@ wl_handle_private_cmd(struct net_device *net, char *command, u32 buf_size)
 {
 	int bytes_written = 0;
 	android_wifi_priv_cmd priv_cmd;
-
+	uint val;
 	bzero(&priv_cmd, sizeof(android_wifi_priv_cmd));
 	priv_cmd.total_len = buf_size;
 
@@ -2623,7 +2623,7 @@ wl_handle_private_cmd(struct net_device *net, char *command, u32 buf_size)
 #endif /* WL_CFG80211 */
 	else if (strnicmp(command, CMD_RESTRICT_BW_20, strlen(CMD_GETBAND)) == 0) {
 		bytes_written = -1;
-		uint val = *(command + strlen(CMD_RESTRICT_BW_20) + 1) - '0';
+		val = *(command + strlen(CMD_RESTRICT_BW_20) + 1) - '0';
 		if (val == 0 || val == 1) {
 			restrict_bw_20 = val;
 			bytes_written = 0;
