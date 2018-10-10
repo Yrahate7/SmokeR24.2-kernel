@@ -550,7 +550,7 @@ static ssize_t synaptics_rmi4_wake_gesture_store(struct device *dev,
   	return count;
 }
 
-static int synaptics_rmi4_proc_init(void)
+static int synaptics_rmi4_proc_init()
 {
 	int ret = 0;
 	char *buf, *path = NULL;
