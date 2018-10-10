@@ -31,7 +31,6 @@
 #include <linux/of_gpio.h>
 #ifdef CONFIG_CUSTOM_DT2W
 #include <linux/input/dt2w.h>
-#include <linux/fb.h>
 #endif
 
 /* Version */
@@ -627,6 +626,10 @@ struct mxt_data {
 	u8 T109_reportid;
 	u16 T38_address;
 	u16 T71_address;
+
+#ifdef CONFIG_FB
+	struct notifier_block fb_notifier;
+#endif
 };
 
 static struct mxt_suspend mxt_save[] = {
@@ -657,6 +660,14 @@ static const struct mxt_i2c_address_pair mxt_i2c_addresses[] = {
 	{ 0x35, 0x5b },
 #endif
 };
+
+#ifdef CONFIG_FB
+static int mxt_fb_notifier_cb(struct notifier_block *self,
+		unsigned long event, void *data);
+#endif
+
+static int mxt_ts_resume(struct device *dev);
+static int mxt_ts_suspend(struct device *dev);
 
 static int mxt_bootloader_read(struct mxt_data *data, u8 *val, unsigned int count)
 {
@@ -1251,9 +1262,9 @@ static void mxt_proc_t9_messages(struct mxt_data *data, u8 *message)
 
 #ifdef CONFIG_CUSTOM_DT2W
 		if (detect_dt2w_event(x, y) && data->wakeup_gesture_mode) {
-			input_event(input_dev, EV_KEY, KEY_POWER, 1);
+			input_report_key(input_dev, KEY_WAKEUP, 1);
 			input_sync(input_dev);
-			input_event(input_dev, EV_KEY, KEY_POWER, 0);
+			input_report_key(input_dev, KEY_WAKEUP, 0);
 			input_sync(input_dev);
 		}
 #endif
@@ -1380,9 +1391,9 @@ static void mxt_proc_t100_messages(struct mxt_data *data, u8 *message)
 
 #ifdef CONFIG_CUSTOM_DT2W
 			if (detect_dt2w_event(x, y) && data->wakeup_gesture_mode) {
-				input_event(input_dev, EV_KEY, KEY_POWER, 1);
+				input_report_key(input_dev, KEY_WAKEUP, 1);
 				input_sync(input_dev);
-				input_event(input_dev, EV_KEY, KEY_POWER, 0);
+				input_report_key(input_dev, KEY_WAKEUP, 0);
 				input_sync(input_dev);
 			}
 #endif
@@ -4237,6 +4248,11 @@ static int mxt_initialize_input_device(struct mxt_data *data)
 	}
 #endif
 
+#ifdef CONFIG_CUSTOM_DT2W
+	__set_bit(KEY_WAKEUP, input_dev->evbit);
+	input_set_capability(input_dev, EV_KEY, KEY_WAKEUP);
+#endif
+
 	input_set_drvdata(input_dev, data);
 	i2c_set_clientdata(data->client, data);
 
@@ -4442,9 +4458,19 @@ static int mxt_probe(struct i2c_client *client,
 
 #ifdef CONFIG_CUSTOM_DT2W
 	if (fb_notifier_register(&fb_notif_atm))
-		pr_err("%s: failed to register fb notifier\n", __func__);
+		dev_err(&client->dev, "%s: failed to register fb notifier\n", __func__);
 	else
-		pr_err("%s: fb notifier registered\n", __func__);
+		dev_err(&client->dev, "%s: fb notifier registered\n", __func__);
+#endif
+
+#ifdef CONFIG_FB
+	data->fb_notifier.notifier_call = mxt_fb_notifier_cb;
+	error = fb_register_client(&data->fb_notifier);
+	if (error < 0) {
+		dev_err(&client->dev,
+				"%s: Failed to register fb notifier client\n",
+				__func__);
+	}
 #endif
 
 	mutex_init(&data->input_mutex);
@@ -4668,6 +4694,14 @@ static int mxt_remove(struct i2c_client *client)
 	if (gpio_is_valid(pdata->reset_gpio))
 		gpio_free(pdata->reset_gpio);
 
+#ifdef CONFIG_FB
+	fb_unregister_client(&data->fb_notifier);
+#endif
+
+#ifdef CONFIG_CUSTOM_DT2W
+	fb_notifier_unregister(&fb_notif_atm);
+#endif
+
 	kfree(data);
 	data = NULL;
 
@@ -4682,13 +4716,37 @@ static void mxt_shutdown(struct i2c_client *client)
 	data->state = SHUTDOWN;
 }
 
-#ifdef CONFIG_PM
+#ifdef CONFIG_FB
+static int mxt_fb_notifier_cb(struct notifier_block *self,
+		unsigned long event, void *data)
+{
+	int *transition;
+	struct fb_event *evdata = data;
+	struct mxt_data *mxt_data = container_of(self, 
+								struct mxt_data,
+								fb_notifier);
+
+	if (evdata && evdata->data && mxt_data) {
+		if (event == FB_EVENT_BLANK) {
+			transition = evdata->data;
+			if (*transition == FB_BLANK_POWERDOWN) {
+				mxt_ts_suspend(&mxt_data->client->dev);
+			} else if (*transition == FB_BLANK_UNBLANK) {
+				mxt_ts_resume(&mxt_data->client->dev);
+			}
+		}
+	}
+
+	return 0;
+}
+#endif
+
 static int mxt_ts_suspend(struct device *dev)
 {
 	struct mxt_data *data =  dev_get_drvdata(dev);
 
-	if (device_may_wakeup(dev) && data->wakeup_gesture_mode) {
-		dev_info(dev, "touch enable irq wake\n");
+	if (data->wakeup_gesture_mode) {
+		dev_err(dev, "touch enable irq wake\n");
 		enable_irq_wake(data->client->irq);
 	}
 
@@ -4699,18 +4757,21 @@ static int mxt_ts_resume(struct device *dev)
 {
 	struct mxt_data *data =  dev_get_drvdata(dev);
 
-	if (device_may_wakeup(dev) && data->wakeup_gesture_mode) {
-		dev_info(dev, "touch disable irq wake\n");
+	if (data->wakeup_gesture_mode) {
+		dev_err(dev, "touch disable irq wake\n");
 		disable_irq_wake(data->client->irq);
 	}
 
 	return 0;
 }
 
+#ifdef CONFIG_PM
 static struct dev_pm_ops mxt_touchscreen_pm_ops = {
 #ifndef CONFIG_HAS_EARLYSUSPEND
+#ifndef CONFIG_FB
 	.suspend = mxt_ts_suspend,
 	.resume	 = mxt_ts_resume,
+#endif
 #endif
 };
 #endif
