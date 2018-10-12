@@ -177,9 +177,8 @@ static int bq2419x_charger_enable(struct bq2419x_chip *bq2419x)
 			return ret;
 		}
 	}
-	else
- 	{
 #endif
+if (!force_disable_charge) {
 		/* set default Charge regulation voltage */
 		ret = regmap_update_bits(bq2419x->regmap, BQ2419X_VOLT_CTRL_REG,
 			bq2419x->chg_voltage_control.mask,
@@ -192,9 +191,7 @@ static int bq2419x_charger_enable(struct bq2419x_chip *bq2419x)
 		ret = regmap_update_bits(bq2419x->regmap, BQ2419X_PWR_ON_REG,
 				BQ2419X_ENABLE_CHARGE_MASK,
 				BQ2419X_ENABLE_CHARGE);
-#ifdef CONFIG_FORCE_FAST_CHARGE
-}
-#endif
+	}
 	} else {
 		dev_info(bq2419x->dev, "Charging disabled\n");
 		ret = regmap_update_bits(bq2419x->regmap, BQ2419X_PWR_ON_REG,
@@ -404,7 +401,7 @@ static int bq2419x_process_charger_plat_data(struct bq2419x_chip *bq2419x,
 		thermal_regulation_threshold =
 			chg_pdata->thermal_regulation_threshold_degC ?: 100;
 		charge_voltage_limit =
-			chg_pdata->charge_voltage_limit_mV ?: 4208;
+			chg_pdata->charge_voltage_limit_mV ?: 4351;
 		pre_to_fast_charge_voltage =
 			chg_pdata->pre_to_fast_charge_voltage_mV ?: 2800;
 	} else {
@@ -416,7 +413,7 @@ static int bq2419x_process_charger_plat_data(struct bq2419x_chip *bq2419x,
 		ir_compensation_resistor = 70;
 		ir_compensation_voltage = 112;
 		thermal_regulation_threshold = 100;
-		charge_voltage_limit = 4208;
+		charge_voltage_limit = 4351;
 		pre_to_fast_charge_voltage = 2800;
 	}
 
