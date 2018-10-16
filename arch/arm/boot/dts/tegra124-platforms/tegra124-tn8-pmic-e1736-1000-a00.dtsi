@@ -443,8 +443,8 @@
 
 					ldo3 {
 						regulator-name = "vdd-touch";
-						regulator-min-microvolt = <3300000>;
-						regulator-max-microvolt = <3300000>;
+						regulator-min-microvolt = <3100000>;
+						regulator-max-microvolt = <3100000>;
 
 						consumers {
 							c1 {
