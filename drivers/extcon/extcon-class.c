@@ -212,7 +212,6 @@ static ssize_t connect_store(struct device *dev, struct device_attribute *attr,
 
 	return count;
 }
-static DEVICE_ATTR_RW(connect);
 
 static ssize_t name_show(struct device *dev, struct device_attribute *attr,
 		char *buf)

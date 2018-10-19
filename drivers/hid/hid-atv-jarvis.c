@@ -873,12 +873,11 @@ static void audio_dec(struct hid_device *hdev, const uint8_t *raw_input,
 						int type, size_t num_bytes)
 {
 	bool dropped_packet = false;
-	struct snd_pcm_substream *substream;
 	struct shdr_device *shdr_dev = hid_get_drvdata(hdev);
 	struct snd_card *shdr_card;
 	struct snd_atvr *atvr_snd;
 	unsigned long flags;
-
+	uint writable;
 	if (shdr_dev == NULL)
 		return;
 	shdr_card = shdr_dev->shdr_card;
@@ -898,7 +897,7 @@ static void audio_dec(struct hid_device *hdev, const uint8_t *raw_input,
 		}
 
 		/* Write data to a FIFO for decoding by the timer task. */
-		uint writable = atomic_fifo_available_to_write(
+		writable = atomic_fifo_available_to_write(
 			&atvr_snd->fifo_controller);
 		if (writable > 0) {
 			uint fifo_index = atomic_fifo_get_write_index(
@@ -1135,7 +1134,6 @@ static void snd_atvr_timer_callback(unsigned long data)
 		pr_err("callback took %d ms\n", diff);
 #endif
 
-lock_err:
 	spin_lock_irqsave(&atvr_snd->timer_lock, flags);
 	if (need_silence)
 		silence_counter += 1;
@@ -1911,7 +1909,7 @@ err_parse:
 	return ret;
 }
 
-static void atvr_remove(struct hid_device *hdev)
+static int atvr_remove(struct hid_device *hdev)
 {
 	unsigned long flags;
 	struct shdr_device *shdr_dev = hid_get_drvdata(hdev);
@@ -1960,6 +1958,7 @@ static void atvr_remove(struct hid_device *hdev)
 	mutex_destroy(&shdr_dev->hid_miss_war_lock);
 	kfree(shdr_dev);
 	mutex_unlock(&snd_cards_lock);
+	return 0;
 }
 
 static const struct hid_device_id atvr_devices[] = {
