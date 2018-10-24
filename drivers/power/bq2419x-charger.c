@@ -47,9 +47,7 @@
 #include <linux/workqueue.h>
 #include <linux/extcon.h>
 #include <linux/power_supply.h>
-#ifdef CONFIG_FORCE_FAST_CHARGE
-#include <linux/disablecharge.h>
-#endif
+
 #define MAX_STR_PRINT 50
 
 #define bq_chg_err(bq, fmt, ...)			\
@@ -65,7 +63,7 @@
 #define BQ2419X_PC_USB_LP0_THRESHOLD	95
 #define BQ2419x_TEMP_H_CHG_DISABLE	50
 #define BQ2419x_TEMP_L_CHG_DISABLE	0
-#define BQ2419x_SW_CHG_CURRENT_LIMIT	3000
+#define BQ2419x_SW_CHG_CURRENT_LIMIT	2000
 
 extern int tps6591x_gpio7_enable(bool enable);
 
@@ -166,19 +164,6 @@ static int bq2419x_charger_enable(struct bq2419x_chip *bq2419x)
 
 	if (bq2419x->battery_presense) {
 		dev_info(bq2419x->dev, "Charging enabled\n");
-#ifdef CONFIG_FORCE_FAST_CHARGE
-		if (force_disable_charge) {
-	ret = regmap_update_bits(bq2419x->regmap, BQ2419X_PWR_ON_REG,
-			 BQ2419X_ENABLE_CHARGE_MASK, BQ2419X_DISABLE_CHARGE);
-	dev_info(bq2419x->dev, "Charging Disabled by user\n");
-	if (ret < 0) {
-			dev_err(bq2419x->dev,
-				"Charge Disable manual failed %d\n", ret);
-			return ret;
-		}
-	}
-#endif
-if (!force_disable_charge) {
 		/* set default Charge regulation voltage */
 		ret = regmap_update_bits(bq2419x->regmap, BQ2419X_VOLT_CTRL_REG,
 			bq2419x->chg_voltage_control.mask,
@@ -191,7 +176,6 @@ if (!force_disable_charge) {
 		ret = regmap_update_bits(bq2419x->regmap, BQ2419X_PWR_ON_REG,
 				BQ2419X_ENABLE_CHARGE_MASK,
 				BQ2419X_ENABLE_CHARGE);
-	}
 	} else {
 		dev_info(bq2419x->dev, "Charging disabled\n");
 		ret = regmap_update_bits(bq2419x->regmap, BQ2419X_PWR_ON_REG,
@@ -201,7 +185,6 @@ if (!force_disable_charge) {
 	if (ret < 0)
 		dev_err(bq2419x->dev, "register update failed, err %d\n", ret);
 	return ret;
-
 }
 
 static int bq2419x_reset_wdt(struct bq2419x_chip *bq2419x, const char *from)
@@ -387,7 +370,7 @@ static int bq2419x_process_charger_plat_data(struct bq2419x_chip *bq2419x,
 	if (chg_pdata) {
 		voltage_input = chg_pdata->input_voltage_limit_mV ?: 4200;
 		min_sys_voltage =
-			chg_pdata->min_system_voltage_limit_mV ?: 3400;
+			chg_pdata->min_system_voltage_limit_mV ?: 3500;
 		fast_charge_current =
 			chg_pdata->fast_charge_current_limit_mA ?: 4544;
 		pre_charge_current =
@@ -401,19 +384,19 @@ static int bq2419x_process_charger_plat_data(struct bq2419x_chip *bq2419x,
 		thermal_regulation_threshold =
 			chg_pdata->thermal_regulation_threshold_degC ?: 100;
 		charge_voltage_limit =
-			chg_pdata->charge_voltage_limit_mV ?: 4351;
+			chg_pdata->charge_voltage_limit_mV ?: 4208;
 		pre_to_fast_charge_voltage =
 			chg_pdata->pre_to_fast_charge_voltage_mV ?: 2800;
 	} else {
 		voltage_input = 4200;
-		min_sys_voltage = 3400;
+		min_sys_voltage = 3500;
 		fast_charge_current = 4544;
 		pre_charge_current = 256;
 		termination_current = 128;
 		ir_compensation_resistor = 70;
 		ir_compensation_voltage = 112;
 		thermal_regulation_threshold = 100;
-		charge_voltage_limit = 4351;
+		charge_voltage_limit = 4208;
 		pre_to_fast_charge_voltage = 2800;
 	}
 
@@ -1459,18 +1442,12 @@ static ssize_t bq2419x_set_charging_state(struct device *dev,
 		mutex_unlock(&bq2419x->mutex);
 		return -EIO;
 	}
-
 	if (enabled)
-		{
 		ret = regmap_update_bits(bq2419x->regmap, BQ2419X_PWR_ON_REG,
 			BQ2419X_ENABLE_CHARGE_MASK, BQ2419X_ENABLE_CHARGE);
-		}
 	else
-		{		
 		ret = regmap_update_bits(bq2419x->regmap, BQ2419X_PWR_ON_REG,
 			 BQ2419X_ENABLE_CHARGE_MASK, BQ2419X_DISABLE_CHARGE);
-		}
-	
 	mutex_unlock(&bq2419x->mutex);
 	if (ret < 0) {
 		dev_err(bq2419x->dev, "register update failed, %d\n", ret);
@@ -1922,7 +1899,7 @@ static struct bq2419x_platform_data *bq2419x_dt_parse(struct i2c_client *client,
 		if (!ret)
 			pdata->bcharger_pdata->charge_hw_current_limit = pval;
 		else
-			pdata->bcharger_pdata->charge_hw_current_limit = 3000;
+			pdata->bcharger_pdata->charge_hw_current_limit = 2100;
 
 		count = of_property_count_u32(batt_reg_node, "ti,soc-range");
 		soc_range_len = (count > 0) ? count : 0;
