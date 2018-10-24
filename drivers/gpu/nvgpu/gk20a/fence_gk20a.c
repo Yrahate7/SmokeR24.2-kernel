@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2014-2016, NVIDIA CORPORATION.  All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -154,7 +154,9 @@ struct gk20a_fence *gk20a_fence_from_semaphore(
 
 #ifdef CONFIG_SYNC
 	sync_fence = gk20a_sync_fence_create(timeline, semaphore,
-					     dependency, "fence");
+						dependency, "f-gk20a-0x%04llx",
+						((u32)(void *)semaphore->value) &
+						0xffff);
 	if (!sync_fence)
 		return NULL;
 #endif
@@ -162,6 +164,7 @@ struct gk20a_fence *gk20a_fence_from_semaphore(
 	f  = alloc_fence(&gk20a_semaphore_fence_ops, sync_fence, wfi);
 	if (!f) {
 #ifdef CONFIG_SYNC
+	if (sync_fence)
 		sync_fence_put(sync_fence);
 #endif
 		return NULL;
