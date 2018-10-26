@@ -31,7 +31,7 @@ static struct cpuquiet_lite_data {
 } cpuquiet_l_data;
 
 static struct kobject *cpuquiet_lite_auto_sysfs_kobject;
-static bool enable = true;
+static bool enable = false;
 static unsigned int custom_min_cpu_online = 2; /* 1/2/3/4 */
 
 CPQ_BASIC_ATTRIBUTE(enable, 0644, bool);

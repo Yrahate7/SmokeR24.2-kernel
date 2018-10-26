@@ -59,13 +59,13 @@
 					writable;
 				};
 				cpu_heavy {
-					temperature = <94000>;
+					temperature = <84000>;
 					hysteresis = <0>;
 					type = "hot";
 					writable;
 				};
 				cpu_throttle {
-					temperature = <85000>;
+					temperature = <75000>;
 					hysteresis = <0>;
 					type = "passive";
 					writable;
@@ -116,13 +116,13 @@
 					writable;
 				};
 				gpu_heavy {
-					temperature = <91000>;
+					temperature = <87000>;
 					hysteresis = <0>;
 					type = "hot";
 					writable;
 				};
 				gpu_throttle {
-					temperature = <81000>;
+					temperature = <79000>;
 					hysteresis = <0>;
 					type = "passive";
 					writable;
