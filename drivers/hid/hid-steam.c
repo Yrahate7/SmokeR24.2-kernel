@@ -25,7 +25,8 @@
 
 #include "hid-steam.h"
 #include "hid-ids.h"
-
+				
+#define SEND_SENSOR_DATA		1
 #define REPORT_ID			(0x00)
 #define STEAM_KEYMAP_SIZE		(23)
 #define SHORT_MAX			(32767)

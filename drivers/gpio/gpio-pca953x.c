@@ -730,7 +730,7 @@ static int pca953x_probe(struct i2c_client *client,
 	struct pca953x_platform_data *pdata;
 	struct pca953x_chip *chip;
 	int irq_base = 0;
-	int ret;
+	long int ret;
 	u32 invert = 0;
 
 	chip = devm_kzalloc(&client->dev,
