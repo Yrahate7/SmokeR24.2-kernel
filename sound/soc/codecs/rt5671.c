@@ -665,7 +665,7 @@ static int rt5671_irq_detection(struct snd_soc_jack_gpio *gpio)
 
 static const DECLARE_TLV_DB_SCALE(drc_limiter_tlv, 0, 375, 0);
 static const DECLARE_TLV_DB_SCALE(drc_pre_tlv, 0, 750, 0);
-static const DECLARE_TLV_DB_SCALE(out_vol_tlv, -4650, 250, 0);
+static const DECLARE_TLV_DB_SCALE(out_vol_tlv, -4650, 375, 0);
 static const DECLARE_TLV_DB_SCALE(dac_vol_tlv, -65625, 375, 0);
 static const DECLARE_TLV_DB_SCALE(in_vol_tlv, -3450, 150, 0);
 static const DECLARE_TLV_DB_SCALE(adc_vol_tlv, -17625, 375, 0);
