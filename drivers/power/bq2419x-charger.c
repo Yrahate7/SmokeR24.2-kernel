@@ -47,9 +47,6 @@
 #include <linux/workqueue.h>
 #include <linux/extcon.h>
 #include <linux/power_supply.h>
-#ifdef CONFIG_FORCE_FAST_CHARGE
-#include <linux/disablecharge.h>
-#endif
 #define MAX_STR_PRINT 50
 
 #define bq_chg_err(bq, fmt, ...)			\
@@ -166,19 +163,6 @@ static int bq2419x_charger_enable(struct bq2419x_chip *bq2419x)
 
 	if (bq2419x->battery_presense) {
 		dev_info(bq2419x->dev, "Charging enabled\n");
-#ifdef CONFIG_FORCE_FAST_CHARGE
-		if (force_disable_charge) {
-	ret = regmap_update_bits(bq2419x->regmap, BQ2419X_PWR_ON_REG,
-			 BQ2419X_ENABLE_CHARGE_MASK, BQ2419X_DISABLE_CHARGE);
-	dev_info(bq2419x->dev, "Charging Disabled by user\n");
-	if (ret < 0) {
-			dev_err(bq2419x->dev,
-				"Charge Disable manual failed %d\n", ret);
-			return ret;
-		}
-	}
-#endif
-if (!force_disable_charge) {
 		/* set default Charge regulation voltage */
 		ret = regmap_update_bits(bq2419x->regmap, BQ2419X_VOLT_CTRL_REG,
 			bq2419x->chg_voltage_control.mask,
@@ -191,7 +175,6 @@ if (!force_disable_charge) {
 		ret = regmap_update_bits(bq2419x->regmap, BQ2419X_PWR_ON_REG,
 				BQ2419X_ENABLE_CHARGE_MASK,
 				BQ2419X_ENABLE_CHARGE);
-	}
 	} else {
 		dev_info(bq2419x->dev, "Charging disabled\n");
 		ret = regmap_update_bits(bq2419x->regmap, BQ2419X_PWR_ON_REG,
