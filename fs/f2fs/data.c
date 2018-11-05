@@ -1693,7 +1693,7 @@ static int f2fs_write_data_pages(struct address_space *mapping,
 	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
 	struct blk_plug plug;
 	int ret;
-
+	bool locked = false;
 	/* deal with chardevs and other special file */
 	if (!mapping->a_ops->writepage)
 		return 0;
@@ -1723,9 +1723,17 @@ static int f2fs_write_data_pages(struct address_space *mapping,
 	else if (atomic_read(&sbi->wb_sync_req))
 		goto skip_write;
 
+	if (!S_ISDIR(inode->i_mode) &&
+	get_dirty_pages(inode) <= SM_I(sbi)->min_seq_blocks) {
+	mutex_lock(&sbi->writepages);
+	locked = true;
+	}
 	blk_start_plug(&plug);
 	ret = f2fs_write_cache_pages(mapping, wbc);
 	blk_finish_plug(&plug);
+	if (locked)
+		mutex_unlock(&sbi->writepages);
+
 
 	if (wbc->sync_mode == WB_SYNC_ALL)
 		atomic_dec(&sbi->wb_sync_req);
