@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export ARCH="arm"
-export KBUILD_BUILD_HOST="eOS-0.4.1-Loki"
+export KBUILD_BUILD_HOST="eOS-5.0-Juno"
 export KBUILD_BUILD_USER="arttttt"
 
 clean_build=0
@@ -9,7 +9,6 @@ config="tegra12_android_defconfig"
 dtb_name="tegra124-mocha.dtb"
 dtb_only=0
 kernel_name=$(git rev-parse --abbrev-ref HEAD)
-build_log="build.log"
 threads=5
 toolchain="$HOME/android/tab/linaro_toolchains_2014-2014.12/arm-cortex_a15-linux-gnueabihf-linaro_4.9.3-2014.12/bin/arm-cortex_a15-linux-gnueabihf-"
 
