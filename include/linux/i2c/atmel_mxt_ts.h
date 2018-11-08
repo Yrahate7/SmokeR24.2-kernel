@@ -51,6 +51,12 @@ struct mxt_config_info {
 	const char *mxt_fw_name;
 	int *key_codes;
 	int key_num;
+	u8 t71_tchthr_pos;
+	u8 mult_intthr_sensitive;
+	u8 mult_intthr_not_sensitive;
+	u8 atchthr_sensitive;
+	u8 mult_tchthr_sensitive;
+	u8 mult_tchthr_not_sensitive;
 };
 
 /* The platform data for the Atmel maXTouch touchscreen driver */

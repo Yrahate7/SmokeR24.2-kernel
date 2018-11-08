@@ -461,11 +461,14 @@
 
 
 #define MXT_INPUT_EVENT_START		0
-#define MXT_INPUT_EVENT_STYLUS_MODE_OFF		0
-#define MXT_INPUT_EVENT_STYLUS_MODE_ON		1
-#define MXT_INPUT_EVENT_WAKUP_MODE_OFF		2
-#define MXT_INPUT_EVENT_WAKUP_MODE_ON		3
-#define MXT_INPUT_EVENT_END		3
+#define MXT_INPUT_EVENT_SENSITIVE_MODE_OFF		0
+#define MXT_INPUT_EVENT_SENSITIVE_MODE_ON		1
+#define MXT_INPUT_EVENT_STYLUS_MODE_OFF		2
+#define MXT_INPUT_EVENT_STYLUS_MODE_ON		3
+#define MXT_INPUT_EVENT_WAKUP_MODE_OFF		4
+#define MXT_INPUT_EVENT_WAKUP_MODE_ON		5
+#define MXT_INPUT_EVENT_END		5
+
 
 #define MXT_MAX_FINGER_NUM	10
 #define BOOTLOADER_1664_1188	1
@@ -581,6 +584,7 @@ struct mxt_data {
 	u16 product_info;
 	u8 read_buf[64];
 	u8 wakeup_gesture_mode;
+	u8 sensitive_mode;
 
 	/* Slowscan parameters	*/
 	int slowscan_enabled;
@@ -2715,6 +2719,18 @@ static int mxt_get_init_setting(struct mxt_data *data)
 {
 	int error;
 	struct device *dev = &data->client->dev;
+	u8 glovectrl;
+
+	if (mxt_get_object(data, MXT_PROCI_GLOVEDETECTION_T78) != NULL) {
+	error = mxt_read_object(data, MXT_PROCI_GLOVEDETECTION_T78,
+					MXT_GLOVE_CTRL, &glovectrl);
+	if (error) {
+		dev_err(dev, "Failed to read glove setting from t78!\n");
+		return error;
+	}
+		if ((glovectrl & 0x01) != 0)
+			data->sensitive_mode = 1;
+	}
 
 	error = mxt_read_resolution(data);
 	if (error) {
@@ -3650,6 +3666,93 @@ static void mxt_enable_gesture_mode(struct mxt_data *data)
 		dev_info(dev, "write to t93 enabled failed!\n");
 }
 
+static int mxt_sensitive_mode_switch(struct mxt_data *data, bool mode_on)
+{
+	int error;
+	struct device *dev = &data->client->dev;
+	const struct mxt_platform_data *pdata = data->pdata;
+	int index = data->current_index;
+	u8 key_ctrl;
+	u8 mult_intthr;
+	u8 atchthr;
+	u8 mult_tchthr;
+
+	error = mxt_read_object(data, MXT_TOUCH_KEYARRAY_T15,
+					MXT_KEYARRAY_CTRL, &key_ctrl);
+	if (error) {
+		dev_err(dev, "Failed to read from T15 ctrl!\n");
+		return error;
+	}
+
+	if (mode_on) {
+		error = mxt_write_object(data, MXT_PROCI_GLOVEDETECTION_T78,
+						MXT_GLOVE_CTRL, MXT_GLOVECTL_ALL_ENABLE);
+		if (error)
+			return error;
+
+		key_ctrl |= MXT_KEY_ADAPTTHREN;
+		mult_intthr = pdata->config_array[index].mult_intthr_sensitive;
+		mult_tchthr = pdata->config_array[index].mult_tchthr_sensitive;
+		atchthr = pdata->config_array[index].atchthr_sensitive;
+	} else {
+		error = mxt_write_object(data, MXT_PROCI_GLOVEDETECTION_T78,
+						MXT_GLOVE_CTRL, 0x0);
+		if (error)
+			return error;
+
+		key_ctrl &= (~MXT_KEY_ADAPTTHREN);
+		if (!data->stylus_mode) {
+			mult_intthr = pdata->config_array[index].mult_intthr_not_sensitive;
+			mult_tchthr = pdata->config_array[index].mult_tchthr_not_sensitive;
+		}
+		else {
+			mult_intthr = pdata->config_array[index].mult_intthr_sensitive;
+			mult_tchthr = pdata->config_array[index].mult_tchthr_sensitive;
+		}
+		atchthr = data->atchthr;
+	}
+
+	error = mxt_write_object(data, MXT_PROCI_RETRANSMISSIONCOMPENSATION_T80,
+					MXT_RETRANS_ATCHTHR, atchthr);
+	if (error) {
+		dev_err(dev, "Failed in writing t80 atchthr!\n");
+		return error;
+	}
+
+	error = mxt_write_object(data, MXT_TOUCH_MULTI_T100,
+					MXT_MULTITOUCH_INTTHR, mult_intthr);
+	if (error) {
+		dev_err(dev, "Failed in writing t100 intthr!\n");
+		return error;
+	}
+	if (mult_tchthr != 0) {
+		error = mxt_write_object(data, MXT_TOUCH_MULTI_T100,
+						MXT_MULTITOUCH_TCHTHR, mult_tchthr);
+		if (error) {
+			dev_err(dev, "Failed in writing t100 tchthr!\n");
+			return error;
+		}
+
+		error = mxt_write_object(data, MXT_SPT_DYMDATA_T71,
+						pdata->config_array[index].t71_tchthr_pos, mult_tchthr);
+		if (error) {
+			dev_err(dev, "Failed in writing t71 tchthr!\n");
+			return error;
+		}
+	}
+
+	error = mxt_write_object(data, MXT_TOUCH_KEYARRAY_T15,
+					MXT_KEYARRAY_CTRL, key_ctrl);
+	if (error) {
+		dev_err(dev, "Failed in writing t15 key ctrl!\n");
+		return error;
+	}
+
+	data->sensitive_mode = (u8)mode_on;
+
+	return error;
+}
+
 static ssize_t mxt_wakeup_mode_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
@@ -3675,6 +3778,42 @@ static ssize_t  mxt_wakeup_mode_store(struct device *dev,
 		data->wakeup_gesture_mode = (u8)val;
 
 	mxt_enable_gesture_mode(data);
+
+	return error ? : count;
+}
+
+
+static ssize_t mxt_sensitive_mode_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	struct mxt_data *data = dev_get_drvdata(dev);
+	int count;
+
+	count = sprintf(buf, "%d\n", (int)data->sensitive_mode);
+
+	return count;
+}
+
+static ssize_t  mxt_sensitive_mode_store(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t count)
+{
+	struct mxt_data *data = dev_get_drvdata(dev);
+	unsigned long val;
+	int error;
+
+	error = strict_strtoul(buf, 0, &val);
+	if (!error) {
+		if (val == 1) {
+			error = mxt_sensitive_mode_switch(data, true);
+			if (error)
+				dev_err(dev, "Failed to open sensitive mode!\n");
+		} else if (val == 0) {
+			error = mxt_sensitive_mode_switch(data, false);
+			if (error)
+				dev_err(dev, "Failed to close sensitive mode!\n");
+		}
+	}
 
 	return error ? : count;
 }
@@ -3754,7 +3893,10 @@ static void mxt_switch_mode_work(struct work_struct *work)
 	struct mxt_data *data = ms->data;
 	u8 value = ms->mode;
 
-	if (value == MXT_INPUT_EVENT_STYLUS_MODE_ON ||
+	if (value == MXT_INPUT_EVENT_SENSITIVE_MODE_ON ||
+				value == MXT_INPUT_EVENT_SENSITIVE_MODE_OFF)
+		mxt_sensitive_mode_switch(data, (bool)(value - MXT_INPUT_EVENT_SENSITIVE_MODE_OFF));
+	else if (value == MXT_INPUT_EVENT_STYLUS_MODE_ON ||
 				value == MXT_INPUT_EVENT_STYLUS_MODE_OFF) {
 		mxt_stylus_mode_switch (data, (bool)(value - MXT_INPUT_EVENT_STYLUS_MODE_OFF));
 	} else if (value == MXT_INPUT_EVENT_WAKUP_MODE_ON ||
@@ -3852,6 +3994,7 @@ static DEVICE_ATTR(update_fw_flag, S_IWUSR, NULL, mxt_update_fw_flag_store);
 static DEVICE_ATTR(selftest,  S_IWUSR | S_IRUSR, mxt_selftest_show, mxt_selftest_store);
 static DEVICE_ATTR(stylus, S_IWUSR | S_IRUSR, mxt_stylus_show, mxt_stylus_store);
 static DEVICE_ATTR(diagnostic, S_IWUSR | S_IRUSR, mxt_diagnostic_show, mxt_diagnostic_store);
+static DEVICE_ATTR(sensitive_mode, S_IWUSR | S_IRUSR, mxt_sensitive_mode_show, mxt_sensitive_mode_store);
 static DEVICE_ATTR(chip_reset, S_IWUSR, NULL, mxt_chip_reset_store);
 static DEVICE_ATTR(chg_state, S_IRUGO, mxt_chg_state_show, NULL);
 static DEVICE_ATTR(wakeup_mode, S_IWUSR | S_IRUSR, mxt_wakeup_mode_show, mxt_wakeup_mode_store);
@@ -3870,6 +4013,7 @@ static struct attribute *mxt_attrs[] = {
 	&dev_attr_selftest.attr,
 	&dev_attr_stylus.attr,
 	&dev_attr_diagnostic.attr,
+	&dev_attr_sensitive_mode.attr,
 	&dev_attr_chip_reset.attr,
 	&dev_attr_chg_state.attr,
 	&dev_attr_wakeup_mode.attr,
@@ -4390,6 +4534,7 @@ static int mxt_parse_dt(struct device *dev, struct mxt_platform_data *pdata)
 	struct mxt_config_info *info;
 	struct property *prop;
 	int ret;
+	u32 temp_val;
 
 	pdata->power_gpio = of_get_named_gpio(np, "atmel,power-gpio", 0);
 	if (pdata->power_gpio < 0)
@@ -4421,6 +4566,36 @@ static int mxt_parse_dt(struct device *dev, struct mxt_platform_data *pdata)
 		of_property_read_string(temp, "atmel,mxt-cfg-name", &info->mxt_cfg_name);
 		of_property_read_u32(temp, "atmel,vendor-id", (unsigned int *) &info->vendor_id);
 		of_property_read_string(temp, "atmel,mxt-fw-name", &info->mxt_fw_name);
+		ret = of_property_read_u32(temp, "atmel,mult-intthr-sensitive", &temp_val);
+		if (ret) {
+			dev_err(dev, "Unable to read mult-intthr-sensitive\n");
+			return ret;
+		} else
+			info->mult_intthr_sensitive = temp_val;
+		ret = of_property_read_u32(temp, "atmel,mult-intthr-not-sensitive", &temp_val);
+		if (ret) {
+			dev_err(dev, "Unable to read mult-intthr-not-sensitive\n");
+			return ret;
+		} else
+			info->mult_intthr_not_sensitive = temp_val;
+		ret = of_property_read_u32(temp, "atmel,atchthr-sensitive", &temp_val);
+		if (ret) {
+			dev_err(dev, "Unable to read mult-intthr-not-sensitive\n");
+			return ret;
+		} else
+			info->atchthr_sensitive = temp_val;
+		ret = of_property_read_u32(temp, "atmel,mult-tchthr-sensitive", &temp_val);
+		if (ret) {
+			dev_err(dev, "Unable to read mult-tchthr-sensitive\n");
+			return ret;
+		} else
+			info->mult_tchthr_sensitive = temp_val;
+		ret = of_property_read_u32(temp, "atmel,mult-tchthr-not-sensitive", &temp_val);
+		if (ret) {
+			dev_err(dev, "Unable to read mult-tchthr-not-sensitive\n");
+			return ret;
+		} else
+			info->mult_tchthr_not_sensitive = temp_val;
 
 		prop = of_find_property(temp, "atmel,key-codes", NULL);
 		if (prop) {

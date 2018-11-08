@@ -183,6 +183,12 @@
 				atmel,vendor-id = <0x4>;
 				atmel,mxt-fw-name = "mxt1664t.fw";
 				atmel,key-codes = <158 102 139>;
+				atmel,t71-tchthr-pos = <22>;
+				atmel,mult-intthr-sensitive = <12>;
+				atmel,mult-intthr-not-sensitive = <17>;
+				atmel,atchthr-sensitive = <6>;
+				atmel,mult-tchthr-sensitive = <0>;
+				atmel,mult-tchthr-not-sensitive = <0>;
 			};
 			atmel,cfg_2 {
 				atmel,family-id = <0xA4>;
@@ -194,6 +200,13 @@
 				atmel,vendor-id = <0x4>;
 				atmel,mxt-fw-name = "mxt1066t.fw";
 				atmel,key-codes = <139 102 158>;
+				atmel,t71-tchthr-pos = <22>;
+				atmel,mult-intthr-sensitive = <12>;
+				atmel,mult-intthr-not-sensitive = <17>;
+				atmel,atchthr-sensitive = <6>;
+				atmel,mult-tchthr-sensitive = <0>;
+				atmel,mult-tchthr-not-sensitive = <0>;
+
 			};
 		};
 	};
