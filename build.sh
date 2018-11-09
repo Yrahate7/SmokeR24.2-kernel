@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export ARCH="arm"
-export KBUILD_BUILD_HOST="eOS-5.0-Juno"
+export KBUILD_BUILD_HOST="eOS-0.4.1-Loki"
 export KBUILD_BUILD_USER="arttttt"
 
 clean_build=0
@@ -9,6 +9,7 @@ config="tegra12_android_defconfig"
 dtb_name="tegra124-mocha.dtb"
 dtb_only=0
 kernel_name=$(git rev-parse --abbrev-ref HEAD)
+build_log="build.log"
 threads=5
 toolchain="$HOME/android/tab/linaro_toolchains_2014-2014.12/arm-cortex_a15-linux-gnueabihf-linaro_4.9.3-2014.12/bin/arm-cortex_a15-linux-gnueabihf-"
 
@@ -49,7 +50,7 @@ function generate_version()
 			awk -F"="  '{$2+=1; print $1"="$2}' $KERNEL_DIR/version > tmpfile
 			mv tmpfile $KERNEL_DIR/version
 			eval "$(awk -F"="  '{print "current_build="$2}' $KERNEL_DIR/version)"
-			export LOCALVERSION="-$current_branch-build$current_build"
+			export LOCALVERSION="-build$current_build"
 			updated_kernel_name=$kernel_name"-build"$current_build
 		else
 			updated_kernel_name=$kernel_name
@@ -86,7 +87,7 @@ function make_zip()
 	fi
 
 	cd $KERNEL_DIR/anykernel
-	local zip_name="$kernel_name($(date +'%d.%m.%Y-%H.%M')).zip"
+	local zip_name="$kernel_name($(date +'%d.%m.%Y-%H:%M')).zip"
 	zip -r $zip_name *
 
 	if [[ -f "$PWD/$zip_name" ]]; then
