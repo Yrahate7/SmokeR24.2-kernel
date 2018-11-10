@@ -4531,7 +4531,7 @@ static int mxt_parse_dt(struct device *dev, struct mxt_platform_data *pdata)
 	struct property *prop;
 	int ret;
 	u32 temp_val;
-
+	
 	pdata->power_gpio = of_get_named_gpio(np, "atmel,power-gpio", 0);
 	if (pdata->power_gpio < 0)
 		pdata->power_gpio = -1;
@@ -4563,6 +4563,12 @@ static int mxt_parse_dt(struct device *dev, struct mxt_platform_data *pdata)
 		of_property_read_string(temp, "atmel,mxt-cfg-name", &info->mxt_cfg_name);
 		of_property_read_u32(temp, "atmel,vendor-id", (unsigned int *) &info->vendor_id);
 		of_property_read_string(temp, "atmel,mxt-fw-name", &info->mxt_fw_name);
+		ret = of_property_read_u32(temp, "atmel,t71-tchthr-pos", &temp_val);
+		if (ret) {
+			dev_err(dev, "Unable to read t71-glove-ctrl-reg\n");
+			return ret;
+		} else
+			info->t71_tchthr_pos = temp_val;
 		ret = of_property_read_u32(temp, "atmel,mult-intthr-sensitive", &temp_val);
 		if (ret) {
 			dev_err(dev, "Unable to read mult-intthr-sensitive\n");
