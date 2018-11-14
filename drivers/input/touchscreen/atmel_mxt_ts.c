@@ -2175,9 +2175,8 @@ static int mxt_probe_power_cfg(struct mxt_data *data)
 	return 0;
 }
 
-static const char *mxt_get_config(struct mxt_data *data, bool is_default)
+static const char * mxt_get_config(struct mxt_data *data, bool is_default)
 {
-	struct device *dev = &data->client->dev;
 	const struct mxt_platform_data *pdata = data->pdata;
 	int i;
 
@@ -2185,22 +2184,23 @@ static const char *mxt_get_config(struct mxt_data *data, bool is_default)
  		if (data->info.family_id == pdata->config_array[i].family_id &&
  			data->info.variant_id == pdata->config_array[i].variant_id &&
  			data->info.version == pdata->config_array[i].version &&
- 			data->info.build == pdata->config_array[i].build) {
- 			if (!is_default) {
- 				if (data->user_id == pdata->config_array[i].user_id) {
- 					dev_info(dev, "select config %d, config name = %s\n", i, pdata->config_array[i].mxt_cfg_name);
- 					data->current_index = i;
+ 			data->info.build == pdata->config_array[i].build) 
+				break;
+			}
 
- 					return  pdata->config_array[i].mxt_cfg_name;
- 				}
- 			} else {
- 				data->current_index = i;
- 				return  pdata->config_array[i].mxt_cfg_name;
- 			}
-		}
+		if (i >= pdata->config_array_size) {
+		/* No matching config */
+		if (!is_default)
+			return NULL;
+		else
+			i = pdata->default_config;
 	}
 
-	return NULL;
+	dev_info(&data->client->dev, "Choose config %d: %s, is_default = %d\n",
+			i, pdata->config_array[i].mxt_cfg_name, is_default);
+
+	data->current_index = i;
+	return pdata->config_array[i].mxt_cfg_name;
 }
 
 static const char *mxt_get_firmware(struct mxt_data *data)
@@ -4599,6 +4599,11 @@ static int mxt_parse_dt(struct device *dev, struct mxt_platform_data *pdata)
 			return ret;
 		} else
 			info->mult_tchthr_not_sensitive = temp_val;
+		ret = of_property_read_u32(np, "atmel,default-config", &pdata->default_config);
+		if (ret) {
+			dev_err(dev, "Unable to get default config\n");
+			pdata->default_config = -1;
+		}
 
 		prop = of_find_property(temp, "atmel,key-codes", NULL);
 		if (prop) {

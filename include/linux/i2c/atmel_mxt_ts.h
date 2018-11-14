@@ -47,8 +47,8 @@ struct mxt_config_info {
 	u8 vendor_id;
 	u8 user_id;
 	/* Points to the firmware name to be upgraded to */
-	const char *mxt_cfg_name;
-	const char *mxt_fw_name;
+	const char* mxt_cfg_name;
+	const char* mxt_fw_name;
 	int *key_codes;
 	int key_num;
 	u8 t71_tchthr_pos;
@@ -77,6 +77,7 @@ struct mxt_platform_data {
 	u8 gpio_mask;
 	u16 vendor_info;
 	u16 product_info;
+	int default_config;
 	u16 version_info;
 };
 
