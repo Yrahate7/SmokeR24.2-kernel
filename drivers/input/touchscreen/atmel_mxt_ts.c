@@ -2184,8 +2184,9 @@ static const char * mxt_get_config(struct mxt_data *data, bool is_default)
  		if (data->info.family_id == pdata->config_array[i].family_id &&
  			data->info.variant_id == pdata->config_array[i].variant_id &&
  			data->info.version == pdata->config_array[i].version &&
- 			data->info.build == pdata->config_array[i].build) 
-				break;
+ 			data->info.build == pdata->config_array[i].build && 
+			data->user_id == pdata->config_array[i].user_id) 
+			break;
 			}
 
 		if (i >= pdata->config_array_size) {
