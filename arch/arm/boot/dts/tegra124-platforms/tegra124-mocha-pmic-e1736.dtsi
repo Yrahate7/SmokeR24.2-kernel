@@ -46,9 +46,6 @@
 				ti,ir-comp-voltage-millivolt = <32>;
 				ti,thermal-regulation-threshold-degc = <60>;
 				ti,disbale-suspend-during-charging;
-				ti,temp-range = <10 15 35 40 45 49>;
-				ti,charge-thermal-voltage-limit = <4351 4350 4350 4350 4300 4100>;
-				ti,charge-thermal-current-limit = <520 1040 3200 2800 2200 520>;
 				consumers {
 					c1 {
 						regulator-consumer-supply = "usb_bat_chg";

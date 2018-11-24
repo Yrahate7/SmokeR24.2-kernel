@@ -66,7 +66,7 @@
 			nvidia,emc-clk-rate = <300000000>;
 			nvidia,cmu-enable = <1>;
 			nvidia,low-v-win = <0x2>;
-			nvidia,fb-bpp = <32>; /* bits per pixel */
+			nvidia,fb-bpp = <24>; /* bits per pixel */
 			nvidia,fb-flags = <TEGRA_FB_FLIP_ON_PROBE>;
 		};
 		dsi {
@@ -79,7 +79,7 @@
 					nvidia,out-flags = <TEGRA_DC_OUT_CONTINUOUS_MODE TEGRA_DC_OUT_INITIALIZED_MODE>;
 				};	
 			smartdimmer {
-					status = "okay";
+					status = "disabled";
 					nvidia,turn-off-brightness = <50>;
 					nvidia,turn-on-brightness = <75>;
 					nvidia,use-auto-pwm = <0>;
@@ -417,7 +417,7 @@
 		nvidia,enable-pmu-vbus-detection;
 		nvidia,enable-aca-rid-detection;
 		nvidia,qc2-input-voltage = <TEGRA_USB_QC2_12V>;
-		nvidia,qc2-current-limit-ua = <1500000>;
+		nvidia,qc2-current-limit-ua = <2000000>;
 		extcon-cables = <&extcon_cable_xlate 0 &extcon_cable_xlate 2 &extcon_cable_xlate 5>;
 		extcon-cable-names = "vbus", "aca-rb", "aca-rc";
 		#extcon-cells = <0x1>;

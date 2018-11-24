@@ -158,7 +158,7 @@ static int tegra_fb_check_var(struct fb_var_screeninfo *var,
 	}
 
 	/* Double yres_virtual to allow double buffering through pan_display */
-	var->yres_virtual = var->yres * 3;
+	var->yres_virtual = var->yres * 2;
 
 	return 0;
 }
@@ -173,6 +173,7 @@ static int tegra_fb_set_par(struct fb_info *info)
 		/* we only support RGB ordering for now */
 		switch (var->bits_per_pixel) {
 		case 32:
+		case 24:
 			var->red.offset = 0;
 			var->red.length = 8;
 			var->green.offset = 8;
@@ -1067,7 +1068,7 @@ struct tegra_fb_info *tegra_fb_register(struct platform_device *ndev,
 	tegra_dc_to_fb_videomode(&m, &dc->mode);
 	fb_videomode_to_var(&info->var, &m);
 	info->var.xres_virtual		= fb_data->xres;
-	info->var.yres_virtual		= fb_data->yres * 3;
+	info->var.yres_virtual		= fb_data->yres * 2;
 	info->var.bits_per_pixel	= fb_data->bits_per_pixel;
 	info->var.activate		= FB_ACTIVATE_VBL;
 	info->var.height		= tegra_dc_get_out_height(dc);

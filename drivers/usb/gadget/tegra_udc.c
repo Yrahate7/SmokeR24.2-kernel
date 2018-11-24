@@ -1461,16 +1461,8 @@ static int tegra_usb_set_charging_current(struct tegra_udc *udc)
 		tegra_udc_notify_event(udc, USB_EVENT_CHARGER);
 		break;
 	case CONNECT_TYPE_DCP_QC2:
-		dev_info(dev, "connected to QuickCharge 2(wall charger)\n");
-#ifdef CONFIG_FORCE_FAST_CHARGE
-		if (force_fast_charge) {
-			max_ua = USB_CHARGING_USB_QC_CURRENT_LIMIT_UA;
-		} else {
-#endif			
+		dev_info(dev, "connected to QuickCharge 2(wall charger)\n");		
 		max_ua = udc->qc2_current_limit;
-#ifdef CONFIG_FORCE_FAST_CHARGE
-		}
-#endif	
 		tegra_udc_notify_event(udc, USB_EVENT_CHARGER);
 		break;
 	case CONNECT_TYPE_DCP_MAXIM:
